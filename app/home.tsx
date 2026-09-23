@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Source_Serif_4, IBM_Plex_Mono, Inter } from "next/font/google";
 import ResumeScanVisual from "@/components/landing/ResumeScanVisual";
-
+import loginform from "./login/page";
 const serif = Source_Serif_4({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
@@ -99,7 +99,7 @@ export default function LandingPage() {
             Redline<span className="text-[#8A8F99]">.</span>
           </Link>
 
-          <nav className="hidden items-center gap-7 font-[family-name:var(--font-mono)] text-[12.5px] uppercase tracking-[0.08em] text-[#4A4F58] md:flex">
+          <nav className="hidden items-center gap-8 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.08em] text-[#4A4F58] md:flex">
             <Link href="/ats" className="transition-colors hover:text-[#14171F]">
               ATS scan
             </Link>
@@ -109,17 +109,14 @@ export default function LandingPage() {
             <Link href="/mock-interview" className="transition-colors hover:text-[#14171F]">
               Interview
             </Link>
-            <Link href="/cover-letter" className="transition-colors hover:text-[#14171F]">
-              Cover letter
-            </Link>
-            <Link href="/dashboard" className="transition-colors hover:text-[#14171F]">
-              Dashboard
+            <Link href="/feedback" className="transition-colors hover:text-[#14171F]">
+              Reports
             </Link>
           </nav>
 
           <div className="flex items-center gap-3">
             <Link
-              href="/login"
+              href="./login"
               className="hidden font-[family-name:var(--font-mono)] text-[13px] text-[#4A4F58] transition-colors hover:text-[#14171F] sm:block"
             >
               Log in
