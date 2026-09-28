@@ -2,23 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Source_Serif_4, IBM_Plex_Mono, Inter } from "next/font/google";
-
-const serif = Source_Serif_4({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-serif",
-});
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-mono",
-});
-const sans = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-});
+import Header from "@/components/navbar/Header";
+import Footer from "@/components/common/Footer";
 
 const TABS = [
   { id: "account", label: "Account" },
@@ -78,26 +63,8 @@ export default function SettingsPage() {
   };
 
   return (
-    <div
-      className={`${sans.variable} ${serif.variable} ${mono.variable} min-h-screen bg-[#F6F5F1] font-[family-name:var(--font-sans)] text-[#14171F] antialiased`}
-    >
-      {/* NAV */}
-      <header className="sticky top-0 z-30 border-b border-[#DBD8CE] bg-[#F6F5F1]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-serif)] text-lg font-semibold tracking-tight"
-          >
-            Redline<span className="text-[#8A8F99]">.</span>
-          </Link>
-          <Link
-            href="/feedback"
-            className="font-[family-name:var(--font-mono)] text-[13px] text-[#4A4F58] transition-colors hover:text-[#14171F]"
-          >
-            Back to reports
-          </Link>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#F6F5F1] text-[#14171F] flex flex-col justify-between">
+      <Header />
 
       <main className="mx-auto max-w-5xl px-6 py-10">
         <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
@@ -361,6 +328,7 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
+      <Footer />
     </div>
   );
 }

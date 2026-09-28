@@ -3,23 +3,8 @@
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Source_Serif_4, IBM_Plex_Mono, Inter } from "next/font/google";
-
-const serif = Source_Serif_4({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-serif",
-});
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-mono",
-});
-const sans = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-});
+import Header from "@/components/navbar/Header";
+import Footer from "@/components/common/Footer";
 
 type ReportType = "scan" | "interview" | "cover-letter";
 
@@ -54,12 +39,12 @@ const DEFAULT_REPORTS: Report[] = [
   {
     id: "r5",
     type: "scan",
-    title: "Resume scan — Product Manager, Acme Inc.",
+    title: "Resume Scan — Senior Product Manager",
     date: "Aug 2, 2026",
     score: 91,
     delta: 23,
     summary:
-      "Strong match. Keyword coverage and structure both clean — this version is ready to send.",
+      "Strong match. Keyword coverage and structure both clean — this version is ready for submission to enterprise ATS filters.",
     details: [
       { label: "Keyword coverage", note: "7 of 8 target terms present", status: "pass" },
       { label: "File structure", note: "No tables or text boxes detected", status: "pass" },
@@ -70,7 +55,7 @@ const DEFAULT_REPORTS: Report[] = [
   {
     id: "r4",
     type: "interview",
-    title: "Mock interview — Senior Product Manager",
+    title: "Mock Interview — Senior Product Manager",
     date: "Jul 30, 2026",
     score: 78,
     delta: 9,
@@ -98,55 +83,30 @@ const DEFAULT_REPORTS: Report[] = [
         ideal_answer_summary: "Frame the business impetus, discuss architectural choices evaluated, and quantify performance gains.",
       },
       {
-        question: "Can you detail a quantifiable metric you achieved and explain your individual contribution?",
-        candidate_answer: "Reduced process turnaround by 34% by establishing automated CI/CD pipelines across 6 engineering squads.",
-        score: 82,
-        star_adherence: "strong",
-        strengths: ["Clear quantifiable metric (34%)", "Distinct scope (6 squads)"],
-        improvement_tips: ["Mention how you handled rollout resistance and regression prevention"],
-        ideal_answer_summary: "Explain baseline turnaround, team collaboration, and automation safeguards.",
-      },
-      {
-        question: "Describe a situation where a stakeholder disagreed with your technical direction. How did you resolve it?",
-        candidate_answer: "The marketing director wanted a feature launched earlier without load testing. We talked about it and decided to run tests first.",
-        score: 68,
+        question: "How did you handle the situation where engineering and executive stakeholders disagreed on the Q3 roadmap priority?",
+        candidate_answer: "I set up a meeting with both parties and shared customer data showing why the feature was needed.",
+        score: 70,
         star_adherence: "partial",
-        strengths: ["Addressed conflict directly"],
-        improvement_tips: ["Use data or compromise to explain how you persuaded the stakeholder", "Specify risk impact that justified the delay"],
-        ideal_answer_summary: "Demonstrate empathetic listening, provide empirical risk data, and propose an MVP compromise.",
+        strengths: ["Data-backed mediation approach"],
+        improvement_tips: ["Highlight the exact tradeoff compromise reached and the resulting business impact"],
+        ideal_answer_summary: "Detail the specific conflicting priorities, the framework used to align on ROI, and the quantifiable outcome.",
       },
     ],
   },
   {
     id: "r3",
     type: "cover-letter",
-    title: "Cover letter — Product Manager, Acme Inc.",
-    date: "Jul 30, 2026",
-    score: 82,
-    delta: 82,
-    summary:
-      "Clear and specific to the role. Closing paragraph is slightly generic — could reference the company more directly.",
-    details: [
-      { label: "Role-specific detail", note: "References 2 of 3 posting requirements", status: "pass" },
-      { label: "Opening line", note: "Avoids generic 'I am writing to apply'", status: "pass" },
-      { label: "Closing paragraph", note: "Reads as generic, no company-specific detail", status: "warn" },
-      { label: "Length", note: "280 words — within ideal range", status: "pass" },
-    ],
-  },
-  {
-    id: "r2",
-    type: "scan",
-    title: "Resume scan — Product Manager, Acme Inc.",
-    date: "Jul 24, 2026",
-    score: 68,
+    title: "Cover Letter — Senior Product Manager, Stripe",
+    date: "Jul 28, 2026",
+    score: 88,
     delta: 12,
     summary:
-      "Above average, but four keyword gaps and one structural issue are likely filtering this out early.",
+      "High alignment. The opening hook directly ties your past scaling experience to the company's stated quarterly infrastructure goals.",
     details: [
-      { label: "Keyword coverage", note: "4 of 8 target terms present", status: "warn" },
-      { label: "File structure", note: "Table detected in skills section", status: "fail" },
-      { label: "Bullet strength", note: "3 bullets lack measurable outcomes", status: "warn" },
-      { label: "Length", note: "1 page — appropriate for experience level", status: "pass" },
+      { label: "Hook strength", note: "Clear value proposition in opening paragraph", status: "pass" },
+      { label: "Metric proof points", note: "3 quantifiable achievements embedded", status: "pass" },
+      { label: "Strategic tone", note: "Executive & outcome-driven phrasing", status: "pass" },
+      { label: "Length & formatting", note: "380 words — ideal concise length", status: "pass" },
     ],
   },
 ];
@@ -158,15 +118,15 @@ const TYPE_META: Record<ReportType, { label: string; href: string }> = {
 };
 
 const STATUS_STYLES: Record<"pass" | "warn" | "fail", { dot: string; text: string; label: string }> = {
-  pass: { dot: "bg-[#4CAF6E]", text: "text-[#2F6B45]", label: "Clean" },
-  warn: { dot: "bg-[#D7A93E]", text: "text-[#8A6B1F]", label: "Needs attention" },
-  fail: { dot: "bg-[#D65A4A]", text: "text-[#9A3B2F]", label: "Blocking issue" },
+  pass: { dot: "bg-emerald-500", text: "text-emerald-800", label: "Clean" },
+  warn: { dot: "bg-amber-500", text: "text-amber-800", label: "Needs attention" },
+  fail: { dot: "bg-red-500", text: "text-red-800", label: "Blocking issue" },
 };
 
 function scoreColor(score: number) {
-  if (score >= 85) return "text-[#2F6B45]";
-  if (score >= 65) return "text-[#8A6B1F]";
-  return "text-[#9A3B2F]";
+  if (score >= 85) return "text-emerald-800";
+  if (score >= 65) return "text-amber-800";
+  return "text-red-800";
 }
 
 function FeedbackContent() {
@@ -177,7 +137,6 @@ function FeedbackContent() {
   const [selectedId, setSelectedId] = useState<string>(DEFAULT_REPORTS[0].id);
   const [filter, setFilter] = useState<ReportType | "all">(requestedType || "all");
 
-  // Read latest completed interview evaluation or scan from sessionStorage
   useEffect(() => {
     if (typeof window !== "undefined") {
       try {
@@ -237,68 +196,60 @@ function FeedbackContent() {
   const firstScan = scanScores.length > 0 ? scanScores[scanScores.length - 1] : 68;
 
   return (
-    <div
-      className={`${sans.variable} ${serif.variable} ${mono.variable} min-h-screen bg-[#F6F5F1] font-[family-name:var(--font-sans)] text-[#14171F] antialiased`}
-    >
-      {/* NAV */}
-      <header className="sticky top-0 z-30 border-b border-[#DBD8CE] bg-[#F6F5F1]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-serif)] text-lg font-semibold tracking-tight"
-          >
-            Redline<span className="text-[#8A8F99]">.</span>
-          </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="font-[family-name:var(--font-mono)] text-[13px] text-[#4A4F58] transition-colors hover:text-[#14171F]"
-            >
-              Dashboard
-            </Link>
-            <Link
-              href="/upload"
-              className="rounded-sm bg-[#14171F] px-4 py-2 font-[family-name:var(--font-mono)] text-[13px] text-[#F6F5F1] transition-colors hover:bg-[#2A2E38]"
-            >
-              New Scan →
-            </Link>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#F6F5F1] text-[#14171F] flex flex-col justify-between print:bg-white">
+      <div className="no-print">
+        <Header />
+      </div>
 
-      <main className="mx-auto max-w-6xl px-6 py-10">
-        <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
-          Performance Scorecards & History
-        </span>
-        <h1 className="mt-2 font-[family-name:var(--font-serif)] text-3xl font-semibold tracking-tight sm:text-4xl">
-          Actionable feedback that actually moves the needle.
-        </h1>
+      <main className="mx-auto max-w-7xl w-full px-4 sm:px-6 py-10 flex-grow">
+        <div className="border-b border-[#DBD8CE]/80 pb-6 mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
+                Continuous Improvement
+              </span>
+              <span className="h-1.5 w-1.5 rounded-full bg-[#D7FF3E]" />
+              <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#5A606D]">
+                Scorecards &amp; Feedback Logs
+              </span>
+            </div>
+            <h1 className="mt-2 font-[family-name:var(--font-serif)] text-3xl font-bold tracking-tight sm:text-4xl text-[#14171F]">
+              Actionable feedback that actually moves the needle.
+            </h1>
+          </div>
+          <Link
+            href="/upload"
+            className="no-print rounded-sm bg-[#14171F] px-5 py-2.5 font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-wider text-[#F6F5F1] font-semibold hover:bg-[#2A2E38]"
+          >
+            + New Scan
+          </Link>
+        </div>
 
         {/* SUMMARY STRIP */}
-        <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="rounded-sm border border-[#DBD8CE] bg-white p-5 shadow-sm">
-            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99]">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="rounded-sm border border-[#DBD8CE] bg-white p-5 shadow-xs">
+            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99] font-bold">
               Best ATS Match Score
             </span>
-            <div className={`mt-2 font-[family-name:var(--font-mono)] text-3xl font-semibold ${scoreColor(bestScan)}`}>
+            <div className={`mt-2 font-[family-name:var(--font-mono)] text-3xl font-bold ${scoreColor(bestScan)}`}>
               {bestScan}
             </div>
             <p className="mt-1 text-[12px] text-[#8A8F99]">Top score across resume iterations</p>
           </div>
-          <div className="rounded-sm border border-[#DBD8CE] bg-white p-5 shadow-sm">
-            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99]">
+          <div className="rounded-sm border border-[#DBD8CE] bg-white p-5 shadow-xs">
+            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99] font-bold">
               Net Score Improvement
             </span>
-            <div className="mt-2 font-[family-name:var(--font-mono)] text-3xl font-semibold text-[#2F6B45]">
+            <div className="mt-2 font-[family-name:var(--font-mono)] text-3xl font-bold text-emerald-800">
               +{Math.max(0, bestScan - firstScan)} pts
             </div>
             <p className="mt-1 text-[12px] text-[#8A8F99]">Measured impact of X-Y-Z rewrites</p>
           </div>
-          <div className="rounded-sm border border-[#DBD8CE] bg-white p-5 shadow-sm">
-            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99]">
+          <div className="rounded-sm border border-[#DBD8CE] bg-white p-5 shadow-xs">
+            <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99] font-bold">
               Evaluations on File
             </span>
-            <div className="mt-2 font-[family-name:var(--font-mono)] text-3xl font-semibold text-[#14171F]">
+            <div className="mt-2 font-[family-name:var(--font-mono)] text-3xl font-bold text-[#14171F]">
               {reports.length}
             </div>
             <p className="mt-1 text-[12px] text-[#8A8F99]">Scans, interviews, &amp; cover letters</p>
@@ -307,208 +258,167 @@ function FeedbackContent() {
 
         <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-[330px_1fr]">
           {/* HISTORY LIST */}
-          <div>
-            {/* Filter tabs */}
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
-              {(
-                [
-                  { id: "all", label: "All" },
-                  { id: "interview", label: "Interviews" },
-                  { id: "scan", label: "Scans" },
-                  { id: "cover-letter", label: "Letters" },
-                ] as const
-              ).map((f) => (
+          <div className="no-print">
+            {/* Filter pills */}
+            <div className="flex gap-1.5 overflow-x-auto pb-3">
+              {(["all", "scan", "interview", "cover-letter"] as const).map((t) => (
                 <button
-                  key={f.id}
+                  key={t}
                   type="button"
-                  onClick={() => setFilter(f.id)}
-                  className={`whitespace-nowrap rounded-full border px-3 py-1 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] transition-colors ${
-                    filter === f.id
-                      ? "border-[#14171F] bg-[#14171F] text-[#F6F5F1]"
-                      : "border-[#DBD8CE] bg-white text-[#4A4F58] hover:border-[#B7B4A9]"
+                  onClick={() => setFilter(t)}
+                  className={`rounded-sm px-3 py-1 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] transition-colors ${
+                    filter === t
+                      ? "bg-[#14171F] text-[#F6F5F1] font-semibold"
+                      : "border border-[#DBD8CE] bg-white text-[#4A4F58] hover:border-[#14171F]"
                   }`}
                 >
-                  {f.label}
+                  {t === "all" ? "All" : TYPE_META[t].label}
                 </button>
               ))}
             </div>
 
-            <div className="mt-4 space-y-2.5">
-              {filtered.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => setSelectedId(r.id)}
-                  className={`block w-full rounded-sm border px-4 py-3.5 text-left transition-colors ${
-                    selectedId === r.id
-                      ? "border-[#14171F] bg-white shadow-sm ring-1 ring-[#14171F]"
-                      : "border-[#DBD8CE] bg-white hover:border-[#B7B4A9]"
-                  }`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.08em] text-[#8A8F99]">
-                        {TYPE_META[r.type].label} · {r.date}
+            <div className="mt-2 space-y-2">
+              {filtered.map((r) => {
+                const isSelected = r.id === selectedId;
+                return (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => setSelectedId(r.id)}
+                    className={`w-full rounded-sm border p-4 text-left transition-all ${
+                      isSelected
+                        ? "border-[#14171F] bg-white shadow-sm ring-1 ring-[#14171F]"
+                        : "border-[#DBD8CE] bg-white/70 hover:bg-white hover:border-[#B7B4A9]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.1em] text-[#8A8F99] font-bold">
+                        {TYPE_META[r.type].label}
                       </span>
-                      <p className="mt-1 truncate text-[13.5px] font-medium text-[#14171F]">
-                        {r.title}
-                      </p>
+                      <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#8A8F99]">
+                        {r.date}
+                      </span>
                     </div>
-                    <span
-                      className={`shrink-0 font-[family-name:var(--font-mono)] text-lg font-semibold ${scoreColor(
-                        r.score
-                      )}`}
-                    >
-                      {r.score}
-                    </span>
-                  </div>
-                </button>
-              ))}
+                    <p className="mt-1 font-semibold text-[13.5px] text-[#14171F] line-clamp-1">
+                      {r.title}
+                    </p>
+                    <div className="mt-2 flex items-center justify-between">
+                      <span
+                        className={`font-[family-name:var(--font-mono)] text-lg font-bold ${scoreColor(r.score)}`}
+                      >
+                        {r.score}
+                        <span className="text-[11px] font-normal text-[#8A8F99]"> /100</span>
+                      </span>
+                      <span className="font-[family-name:var(--font-mono)] text-[11px] font-bold text-emerald-800">
+                        +{r.delta} pts
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* DETAIL SCORECARD PANEL */}
-          <div className="rounded-sm border border-[#DBD8CE] bg-white p-7 shadow-sm">
-            <div className="flex flex-wrap items-start justify-between gap-4">
+          {/* REPORT DETAILS PANE */}
+          <div className="rounded-sm border border-[#DBD8CE] bg-white p-7 shadow-xs">
+            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#F0EEE7] pb-5">
               <div>
-                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
-                  {TYPE_META[selected.type].label} · {selected.date}
+                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99] font-bold">
+                  {TYPE_META[selected.type].label} Scorecard
                 </span>
-                <h2 className="mt-1.5 font-[family-name:var(--font-serif)] text-2xl font-semibold tracking-tight">
+                <h2 className="mt-1 font-[family-name:var(--font-serif)] text-2xl font-bold tracking-tight text-[#14171F]">
                   {selected.title}
                 </h2>
+                <p className="mt-1 font-[family-name:var(--font-mono)] text-[12px] text-[#8A8F99]">
+                  Evaluated on {selected.date}
+                </p>
               </div>
-              <Link
-                href={TYPE_META[selected.type].href}
-                className="shrink-0 rounded-sm border border-[#DBD8CE] px-4 py-2 font-[family-name:var(--font-mono)] text-[12px] uppercase tracking-[0.06em] text-[#14171F] transition-colors hover:border-[#14171F]"
-              >
-                Run New {TYPE_META[selected.type].label} →
-              </Link>
-            </div>
 
-            {/* Overall Score Row */}
-            <div className="mt-6 flex flex-wrap items-center gap-6 border-y border-[#F0EEE7] py-5">
-              <div className="flex items-baseline gap-2">
-                <span
-                  className={`font-[family-name:var(--font-mono)] text-5xl font-semibold ${scoreColor(
-                    selected.score
-                  )}`}
-                >
-                  {selected.score}
-                </span>
-                <span className="font-[family-name:var(--font-mono)] text-base text-[#8A8F99]">
-                  / 100
-                </span>
-              </div>
-              {selected.delta > 0 && (
-                <span className="font-[family-name:var(--font-mono)] text-[12px] text-[#2F6B45]">
-                  ↑ +{selected.delta} vs. initial attempt
-                </span>
-              )}
-              <div className="ml-auto flex items-center gap-3">
-                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] text-[#8A8F99]">
-                  Benchmark
-                </span>
-                <div className="h-2 w-32 overflow-hidden rounded-full bg-[#EDEBE3]">
+              <div className="flex items-center gap-3">
+                <div className="text-right">
                   <div
-                    className="h-full rounded-full bg-[#D7FF3E]"
-                    style={{ width: `${selected.score}%` }}
-                  />
+                    className={`font-[family-name:var(--font-mono)] text-4xl font-bold ${scoreColor(selected.score)}`}
+                  >
+                    {selected.score}
+                    <span className="text-base font-normal text-[#8A8F99]"> /100</span>
+                  </div>
+                  <span className="font-[family-name:var(--font-mono)] text-[11.5px] font-bold text-emerald-800">
+                    +{selected.delta} pts improvement
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* INTERVIEW RIGOR METRICS BAR (If interview) */}
-            {selected.type === "interview" && selected.interview_metrics && (
-              <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-sm border border-[#DBD8CE] bg-[#F6F5F1] p-3.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase text-[#6B6F79]">
-                      Response Clarity
-                    </span>
-                    <span className="font-[family-name:var(--font-mono)] text-[12px] font-semibold text-[#14171F]">
-                      {selected.interview_metrics.clarity_score}/100
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#DBD8CE]">
-                    <div
-                      className="h-full bg-[#14171F]"
-                      style={{ width: `${selected.interview_metrics.clarity_score}%` }}
-                    />
-                  </div>
-                </div>
+            {/* Summary */}
+            <div className="mt-6">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99] font-bold">
+                Executive Synthesis
+              </span>
+              <p className="mt-2 text-[15px] leading-relaxed text-[#4A4F58]">
+                {selected.summary}
+              </p>
+            </div>
 
-                <div className="rounded-sm border border-[#DBD8CE] bg-[#F6F5F1] p-3.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase text-[#6B6F79]">
+            {/* If interview -> show sub-metrics and per-question STAR breakdown */}
+            {selected.type === "interview" && selected.interview_metrics && (
+              <div className="mt-8 border-t border-[#F0EEE7] pt-6">
+                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99] font-bold">
+                  STAR Rubric Breakdown
+                </span>
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div className="rounded-sm border border-[#DBD8CE] bg-[#FAF9F5] p-4 text-center">
+                    <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase text-[#6B6F79]">
+                      Verbal Clarity
+                    </span>
+                    <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-bold text-[#14171F]">
+                      {selected.interview_metrics.clarity_score}%
+                    </div>
+                  </div>
+                  <div className="rounded-sm border border-[#DBD8CE] bg-[#FAF9F5] p-4 text-center">
+                    <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase text-[#6B6F79]">
                       STAR Adherence
                     </span>
-                    <span className="font-[family-name:var(--font-mono)] text-[12px] font-semibold text-[#14171F]">
-                      {selected.interview_metrics.star_score}/100
-                    </span>
+                    <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-bold text-[#14171F]">
+                      {selected.interview_metrics.star_score}%
+                    </div>
                   </div>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#DBD8CE]">
-                    <div
-                      className="h-full bg-[#D7FF3E]"
-                      style={{ width: `${selected.interview_metrics.star_score}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div className="rounded-sm border border-[#DBD8CE] bg-[#F6F5F1] p-3.5">
-                  <div className="flex items-center justify-between">
-                    <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase text-[#6B6F79]">
-                      Technical &amp; Metric Depth
+                  <div className="rounded-sm border border-[#DBD8CE] bg-[#FAF9F5] p-4 text-center">
+                    <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase text-[#6B6F79]">
+                      Metric Depth
                     </span>
-                    <span className="font-[family-name:var(--font-mono)] text-[12px] font-semibold text-[#14171F]">
-                      {selected.interview_metrics.depth_score}/100
-                    </span>
-                  </div>
-                  <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-[#DBD8CE]">
-                    <div
-                      className="h-full bg-[#14171F]"
-                      style={{ width: `${selected.interview_metrics.depth_score}%` }}
-                    />
+                    <div className="mt-1 font-[family-name:var(--font-mono)] text-2xl font-bold text-[#14171F]">
+                      {selected.interview_metrics.depth_score}%
+                    </div>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Executive Summary */}
-            <div className="mt-6">
-              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#8A8F99]">
-                Executive Assessment
-              </span>
-              <p className="mt-1.5 text-[14.5px] leading-relaxed text-[#4A4F58]">
-                {selected.summary}
-              </p>
-            </div>
-
-            {/* QUESTION-BY-QUESTION BREAKDOWN (If interview has questions) */}
+            {/* Question by question feedback */}
             {selected.type === "interview" &&
               selected.question_feedbacks &&
               selected.question_feedbacks.length > 0 && (
                 <div className="mt-8 border-t border-[#F0EEE7] pt-6">
-                  <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
-                    Question-by-Question Coaching Tips
+                  <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99] font-bold">
+                    Per-Question Coaching &amp; STAR Analysis
                   </span>
                   <div className="mt-4 space-y-4">
                     {selected.question_feedbacks.map((q, idx) => (
                       <div
                         key={idx}
-                        className="rounded-sm border border-[#DBD8CE] bg-[#F6F5F1]/50 p-5"
+                        className="rounded-sm border border-[#DBD8CE] bg-[#FAF9F5] p-5 shadow-2xs"
                       >
                         <div className="flex items-start justify-between gap-3">
-                          <p className="font-[family-name:var(--font-serif)] text-[15px] font-semibold text-[#14171F]">
+                          <p className="font-[family-name:var(--font-serif)] text-[15.5px] font-bold text-[#14171F]">
                             Q{idx + 1}: {q.question}
                           </p>
                           <span
-                            className={`shrink-0 rounded px-2 py-0.5 font-[family-name:var(--font-mono)] text-[10.5px] uppercase ${
+                            className={`shrink-0 rounded-full px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10.5px] uppercase font-bold ${
                               q.star_adherence === "strong"
-                                ? "bg-[#D7FF3E]/30 text-[#14171F] font-medium"
+                                ? "bg-emerald-100 text-emerald-800"
                                 : q.star_adherence === "partial"
-                                ? "bg-[#FBF6EA] text-[#8A6B1F]"
-                                : "bg-[#FBEAEA] text-[#9A3B2F]"
+                                ? "bg-amber-100 text-amber-800"
+                                : "bg-red-100 text-red-800"
                             }`}
                           >
                             STAR: {q.star_adherence}
@@ -516,31 +426,31 @@ function FeedbackContent() {
                         </div>
 
                         {q.candidate_answer && (
-                          <div className="mt-3 rounded bg-white p-3 border border-[#E5E2D8] text-[13.5px] leading-relaxed text-[#4A4F58]">
-                            <span className="block font-[family-name:var(--font-mono)] text-[10px] uppercase text-[#8A8F99] mb-1">
-                              Your Response:
+                          <div className="mt-3 rounded-sm bg-white p-3.5 border border-[#DBD8CE] text-[13.5px] leading-relaxed text-[#4A4F58]">
+                            <span className="block font-[family-name:var(--font-mono)] text-[10px] uppercase text-[#8A8F99] font-bold mb-1">
+                              Your Spoken / Typed Response:
                             </span>
                             &ldquo;{q.candidate_answer}&rdquo;
                           </div>
                         )}
 
                         <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                          <div className="rounded border border-[#E5E2D8] bg-white p-3">
-                            <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-[#2F6B45]">
-                              ✓ Key Strengths
+                          <div className="rounded-sm border border-emerald-200 bg-white p-3">
+                            <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.06em] text-emerald-800 font-bold block mb-1">
+                              ✓ Demonstrated Strengths
                             </span>
-                            <ul className="mt-1.5 space-y-1 text-[12.5px] text-[#4A4F58]">
+                            <ul className="space-y-1 text-[12.5px] text-[#4A4F58]">
                               {q.strengths.map((str, i) => (
                                 <li key={i}>• {str}</li>
                               ))}
                             </ul>
                           </div>
 
-                          <div className="rounded border border-[#E5E2D8] bg-white p-3">
-                            <span className="font-[family-name:var(--font-mono)] text-[10px] uppercase tracking-[0.06em] text-[#B5563E]">
-                              ↑ Coaching &amp; Improvements
+                          <div className="rounded-sm border border-amber-200 bg-white p-3">
+                            <span className="font-[family-name:var(--font-mono)] text-[10.5px] uppercase tracking-[0.06em] text-amber-900 font-bold block mb-1">
+                              ↑ Coaching &amp; Precision Fixes
                             </span>
-                            <ul className="mt-1.5 space-y-1 text-[12.5px] text-[#4A4F58]">
+                            <ul className="space-y-1 text-[12.5px] text-[#4A4F58]">
                               {q.improvement_tips.map((tip, i) => (
                                 <li key={i}>• {tip}</li>
                               ))}
@@ -549,8 +459,8 @@ function FeedbackContent() {
                         </div>
 
                         {q.ideal_answer_summary && (
-                          <p className="mt-3 font-[family-name:var(--font-mono)] text-[11px] text-[#8A8F99]">
-                            <strong>Ideal Delivery:</strong> {q.ideal_answer_summary}
+                          <p className="mt-3 font-[family-name:var(--font-mono)] text-[11.5px] text-[#6B7280]">
+                            <strong>Target Delivery:</strong> {q.ideal_answer_summary}
                           </p>
                         )}
                       </div>
@@ -562,8 +472,8 @@ function FeedbackContent() {
             {/* Standard audit checklist details (for scans / letters) */}
             {selected.type !== "interview" && (
               <div className="mt-8 border-t border-[#F0EEE7] pt-6 space-y-3">
-                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
-                  Audit Breakdown
+                <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99] font-bold">
+                  Audit Criteria Verification
                 </span>
                 {selected.details.map((d) => {
                   const style = STATUS_STYLES[d.status];
@@ -573,13 +483,13 @@ function FeedbackContent() {
                       className="flex items-center justify-between border-b border-[#F0EEE7] pb-3 last:border-none last:pb-0"
                     >
                       <div>
-                        <p className="text-[14px] font-medium text-[#14171F]">{d.label}</p>
-                        <p className="mt-0.5 text-[13px] text-[#8A8F99]">{d.note}</p>
+                        <p className="text-[14px] font-semibold text-[#14171F]">{d.label}</p>
+                        <p className="mt-0.5 text-[13px] text-[#6B7280]">{d.note}</p>
                       </div>
                       <span
-                        className={`flex shrink-0 items-center gap-2 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] ${style.text}`}
+                        className={`flex shrink-0 items-center gap-1.5 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.08em] font-semibold ${style.text}`}
                       >
-                        <span className={`h-1.5 w-1.5 rounded-full ${style.dot}`} />
+                        <span className={`h-2 w-2 rounded-full ${style.dot}`} />
                         {style.label}
                       </span>
                     </div>
@@ -590,6 +500,10 @@ function FeedbackContent() {
           </div>
         </div>
       </main>
+
+      <div className="no-print">
+        <Footer />
+      </div>
     </div>
   );
 }

@@ -3,32 +3,17 @@
 import { useState, useRef, DragEvent, ChangeEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Source_Serif_4, IBM_Plex_Mono, Inter } from "next/font/google";
-
-const serif = Source_Serif_4({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  variable: "--font-serif",
-});
-const mono = IBM_Plex_Mono({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  variable: "--font-mono",
-});
-const sans = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-sans",
-});
+import Header from "@/components/navbar/Header";
+import Footer from "@/components/common/Footer";
 
 const MAX_SIZE_MB = 10;
 const ACCEPTED_LABEL = ".PDF, .DOC, .DOCX";
 
 const SCAN_STEPS = [
-  "Uploading document...",
-  "Parsing structure & extracting text...",
-  "Running ATS spiders & matching keywords...",
-  "Detecting passive verbs & drafting Google X-Y-Z rewrites...",
+  "Uploading & decrypting document structure…",
+  "Executing AST text parser & section tokenizer…",
+  "Querying ATS filters & matching role keywords…",
+  "Detecting passive duties & drafting Google X-Y-Z rewrites…",
 ];
 
 function formatBytes(bytes: number): string {
@@ -82,7 +67,7 @@ export default function UploadPage() {
   const handleSubmit = async () => {
     setError("");
     if (!file) {
-      setError("Add your resume file before scanning.");
+      setError("Please select or drop your resume document before starting the scan.");
       return;
     }
     setSubmitting(true);
@@ -96,7 +81,7 @@ export default function UploadPage() {
         }
         return prev;
       });
-    }, 1800);
+    }, 1600);
 
     try {
       const formData = new FormData();
@@ -119,7 +104,7 @@ export default function UploadPage() {
 
       const data = await res.json();
 
-      // Store in sessionStorage for immediate fast preview
+      // Store in sessionStorage for fast client preview
       if (typeof window !== "undefined" && data.results) {
         window.sessionStorage.setItem("redline_current_scan", JSON.stringify(data.results));
       }
@@ -134,38 +119,36 @@ export default function UploadPage() {
   };
 
   return (
-    <div
-      className={`${sans.variable} ${serif.variable} ${mono.variable} min-h-screen bg-[#F6F5F1] font-[family-name:var(--font-sans)] text-[#14171F] antialiased`}
-    >
-      {/* NAV */}
-      <header className="sticky top-0 z-30 border-b border-[#DBD8CE] bg-[#F6F5F1]/90 backdrop-blur">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-4">
-          <Link
-            href="/"
-            className="font-[family-name:var(--font-serif)] text-lg font-semibold tracking-tight"
-          >
-            Redline<span className="text-[#8A8F99]">.</span>
-          </Link>
+    <div className="min-h-screen bg-[#F6F5F1] text-[#14171F] flex flex-col justify-between">
+      <Header />
+
+      <main className="mx-auto max-w-3xl w-full px-4 sm:px-6 py-12 flex-grow">
+        <div className="border-b border-[#DBD8CE]/80 pb-6 mb-8 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
+                Step 1 of 1 · ATS Document Audit
+              </span>
+              <span className="h-1.5 w-1.5 rounded-full bg-[#D7FF3E]" />
+              <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#5A606D]">
+                Strict Parsing Emulation
+              </span>
+            </div>
+            <h1 className="mt-2 font-[family-name:var(--font-serif)] text-3xl font-bold tracking-tight sm:text-4xl text-[#14171F]">
+              Upload your resume for audit.
+            </h1>
+            <p className="mt-2 text-[15px] leading-relaxed text-[#5A606D] max-w-xl">
+              We&apos;ll parse it the exact way applicant tracking software does. Add the target job description to match skills and generate custom X-Y-Z rewrites.
+            </p>
+          </div>
+
           <Link
             href="/ats"
-            className="font-[family-name:var(--font-mono)] text-[13px] text-[#4A4F58] transition-colors hover:text-[#14171F]"
+            className="self-start sm:self-auto rounded-sm border border-[#DBD8CE] bg-white px-3.5 py-2 font-[family-name:var(--font-mono)] text-[11.5px] uppercase tracking-wider text-[#14171F] hover:bg-[#FAF9F5] shadow-xs"
           >
-            See a sample scan
+            Explore Sample Audit →
           </Link>
         </div>
-      </header>
-
-      <main className="mx-auto max-w-3xl px-6 py-14">
-        <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.14em] text-[#8A8F99]">
-          Step 1 of 1
-        </span>
-        <h1 className="mt-3 font-[family-name:var(--font-serif)] text-3xl font-semibold tracking-tight sm:text-4xl">
-          Upload your resume.
-        </h1>
-        <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-[#4A4F58]">
-          We'll scan it the way applicant tracking software does. Paste the
-          job posting too, and we'll score your match against it directly.
-        </p>
 
         {/* DROPZONE */}
         <div
@@ -174,10 +157,10 @@ export default function UploadPage() {
           onDragEnter={(e) => handleDrag(e, true)}
           onDragLeave={(e) => handleDrag(e, false)}
           onClick={() => !submitting && inputRef.current?.click()}
-          className={`mt-10 flex cursor-pointer flex-col items-center justify-center rounded-sm border-2 border-dashed px-6 py-16 text-center transition-colors ${
+          className={`relative flex cursor-pointer flex-col items-center justify-center rounded-sm border-2 border-dashed p-10 sm:p-14 text-center transition-all ${
             dragActive
-              ? "border-[#14171F] bg-white"
-              : "border-[#DBD8CE] bg-white/60 hover:border-[#B7B4A9] hover:bg-white"
+              ? "border-[#14171F] bg-[#D7FF3E]/10 ring-4 ring-[#D7FF3E]/30"
+              : "border-[#DBD8CE] bg-white hover:border-[#14171F] hover:shadow-xs"
           } ${submitting ? "pointer-events-none opacity-60" : ""}`}
         >
           <input
@@ -191,13 +174,13 @@ export default function UploadPage() {
 
           {!file ? (
             <>
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#DBD8CE] bg-[#F6F5F1]">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full border border-[#DBD8CE] bg-[#F6F5F1] text-[#14171F] shadow-xs">
                 <svg
-                  width="20"
-                  height="20"
+                  width="24"
+                  height="24"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="#4A4F58"
+                  stroke="currentColor"
                   strokeWidth="1.8"
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -206,28 +189,36 @@ export default function UploadPage() {
                   <path d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3" />
                 </svg>
               </div>
-              <p className="mt-4 font-[family-name:var(--font-sans)] text-[15px] font-medium text-[#14171F]">
+              <h3 className="mt-4 font-[family-name:var(--font-serif)] text-lg font-bold text-[#14171F]">
                 Drag and drop your resume here
-              </p>
+              </h3>
               <p className="mt-1 font-[family-name:var(--font-mono)] text-[12px] text-[#8A8F99]">
-                or click to browse — {ACCEPTED_LABEL} — up to {MAX_SIZE_MB}MB
+                or click to browse your files — {ACCEPTED_LABEL} — max {MAX_SIZE_MB}MB
               </p>
+              <div className="mt-4 flex items-center gap-2">
+                <span className="rounded-full bg-[#EDEBE3] px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10.5px] text-[#5A606D]">
+                  Single-column formats supported
+                </span>
+                <span className="rounded-full bg-[#EDEBE3] px-2.5 py-0.5 font-[family-name:var(--font-mono)] text-[10.5px] text-[#5A606D]">
+                  Private &amp; Encrypted
+                </span>
+              </div>
             </>
           ) : (
             <div
-              className="flex w-full max-w-sm items-center justify-between rounded-sm border border-[#DBD8CE] bg-[#F6F5F1] px-4 py-3.5 text-left"
+              className="flex w-full max-w-md items-center justify-between rounded-sm border border-[#DBD8CE] bg-[#FAF9F5] p-4 text-left shadow-xs"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center gap-3 overflow-hidden">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-sm bg-[#14171F] font-[family-name:var(--font-mono)] text-[10px] font-semibold text-[#D7FF3E]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-sm bg-[#14171F] font-[family-name:var(--font-mono)] text-[11px] font-bold text-[#D7FF3E]">
                   {file.name.split(".").pop()?.toUpperCase()}
                 </span>
                 <div className="min-w-0">
-                  <p className="truncate font-[family-name:var(--font-sans)] text-[13.5px] font-medium text-[#14171F]">
+                  <p className="truncate font-[family-name:var(--font-sans)] text-[14px] font-semibold text-[#14171F]">
                     {file.name}
                   </p>
                   <p className="font-[family-name:var(--font-mono)] text-[11px] text-[#8A8F99]">
-                    {formatBytes(file.size)}
+                    {formatBytes(file.size)} · Ready to scan
                   </p>
                 </div>
               </div>
@@ -239,7 +230,7 @@ export default function UploadPage() {
                     setFile(null);
                     if (inputRef.current) inputRef.current.value = "";
                   }}
-                  className="ml-3 shrink-0 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] text-[#8A8F99] hover:text-[#D65A4A]"
+                  className="ml-4 shrink-0 font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.06em] text-red-600 hover:text-red-800 underline"
                 >
                   Remove
                 </button>
@@ -248,17 +239,17 @@ export default function UploadPage() {
           )}
         </div>
 
-        {/* JOB POSTING */}
-        <div className="mt-8">
-          <div className="flex items-center justify-between">
+        {/* TARGET JOB POSTING */}
+        <div className="mt-8 rounded-sm border border-[#DBD8CE] bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
             <label
               htmlFor="jobPosting"
-              className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#6B6F79]"
+              className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.1em] text-[#6B6F79] font-bold"
             >
-              Job posting
+              Target Job Description (Optional)
             </label>
-            <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#B7B4A9]">
-              Optional, improves match score
+            <span className="font-[family-name:var(--font-mono)] text-[11px] text-[#8A8F99]">
+              Enables keyword &amp; competency matching
             </span>
           </div>
           <textarea
@@ -266,25 +257,25 @@ export default function UploadPage() {
             value={jobPosting}
             onChange={(e) => setJobPosting(e.target.value)}
             disabled={submitting}
-            placeholder="Paste the full job description here..."
-            rows={7}
-            className="mt-1.5 w-full resize-none rounded-sm border border-[#DBD8CE] bg-white px-3.5 py-3 font-[family-name:var(--font-sans)] text-sm leading-relaxed text-[#14171F] placeholder:text-[#B7B4A9] outline-none transition-colors focus:border-[#14171F] focus:ring-2 focus:ring-[#D7FF3E]/40 disabled:bg-[#ECE9DF]"
+            placeholder="Paste the job requirements, responsibilities, or company role overview to calculate your match score…"
+            rows={6}
+            className="w-full resize-none rounded-sm border border-[#DBD8CE] bg-white p-3.5 font-[family-name:var(--font-sans)] text-sm leading-relaxed text-[#14171F] placeholder:text-[#B7B4A9] outline-none transition-colors focus:border-[#14171F] focus:ring-2 focus:ring-[#D7FF3E]/40 disabled:bg-[#ECE9DF]"
           />
         </div>
 
         {/* MULTI-STEP PROGRESS INDICATOR */}
         {submitting && (
-          <div className="mt-6 rounded-sm border border-[#DBD8CE] bg-white p-5">
-            <div className="flex items-center justify-between">
-              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-[#8A8F99]">
-                Analysis in Progress
+          <div className="mt-6 rounded-sm border border-[#DBD8CE] bg-white p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-[family-name:var(--font-mono)] text-[11px] uppercase tracking-[0.12em] text-[#8A8F99] font-bold">
+                ATS Analysis in Progress
               </span>
-              <span className="font-[family-name:var(--font-mono)] text-[12px] text-[#14171F]">
+              <span className="font-[family-name:var(--font-mono)] text-[12px] font-semibold text-[#14171F]">
                 Step {currentStepIndex + 1} of {SCAN_STEPS.length}
               </span>
             </div>
 
-            <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-[#EDEBE3]">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-[#EDEBE3]">
               <div
                 className="h-full bg-[#14171F] transition-all duration-500 ease-out"
                 style={{
@@ -293,27 +284,27 @@ export default function UploadPage() {
               />
             </div>
 
-            <div className="mt-4 space-y-2">
+            <div className="mt-5 space-y-2.5">
               {SCAN_STEPS.map((step, idx) => {
                 const isDone = idx < currentStepIndex;
                 const isCurrent = idx === currentStepIndex;
                 return (
                   <div
                     key={step}
-                    className={`flex items-center gap-2.5 text-[13px] ${
+                    className={`flex items-center gap-3 text-[13px] ${
                       isDone
                         ? "text-[#2F6B45]"
                         : isCurrent
-                        ? "font-medium text-[#14171F]"
+                        ? "font-bold text-[#14171F]"
                         : "text-[#B7B4A9]"
                     }`}
                   >
                     <span
-                      className={`h-2 w-2 rounded-full ${
+                      className={`h-2.5 w-2.5 rounded-full transition-all ${
                         isDone
                           ? "bg-[#4CAF6E]"
                           : isCurrent
-                          ? "animate-pulse bg-[#14171F]"
+                          ? "animate-pulse bg-[#14171F] ring-4 ring-[#D7FF3E]"
                           : "bg-[#DBD8CE]"
                       }`}
                     />
@@ -326,26 +317,28 @@ export default function UploadPage() {
         )}
 
         {error && (
-          <p className="mt-5 rounded-sm border border-[#E8B4B4] bg-[#FBEAEA] px-4 py-3 font-[family-name:var(--font-sans)] text-sm text-[#9A3B3B]">
+          <p className="mt-5 rounded-sm border border-red-200 bg-red-50 p-4 font-[family-name:var(--font-sans)] text-sm text-red-800">
             {error}
           </p>
         )}
 
-        {/* SUBMIT */}
-        <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+        {/* SUBMIT BUTTON */}
+        <div className="mt-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <button
             type="button"
             onClick={handleSubmit}
             disabled={submitting}
-            className="rounded-sm bg-[#14171F] px-7 py-3.5 text-center font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.08em] text-[#F6F5F1] transition-colors hover:bg-[#2A2E38] disabled:opacity-60"
+            className="rounded-sm bg-[#14171F] px-8 py-4 font-[family-name:var(--font-mono)] text-[13px] uppercase tracking-[0.08em] text-[#F6F5F1] font-bold transition-all hover:bg-[#2A2E38] disabled:opacity-50 hover:shadow-md active:scale-[0.99]"
           >
-            {submitting ? "Analyzing Resume..." : "Scan my resume →"}
+            {submitting ? "Analyzing Resume Against ATS Models…" : "Scan My Resume Now →"}
           </button>
-          <p className="font-[family-name:var(--font-mono)] text-[12px] text-[#8A8F99]">
-            Takes under a minute. Nothing is shared with employers.
-          </p>
+          <div className="font-[family-name:var(--font-mono)] text-[11.5px] text-[#8A8F99]">
+            Instant results · Complete privacy · No credit card required
+          </div>
         </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

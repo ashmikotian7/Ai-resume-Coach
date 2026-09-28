@@ -1,26 +1,77 @@
 @import "tailwindcss";
 
+@theme {
+  --font-sans: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-serif), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-mono), "Courier New", monospace;
+  --color-canvas: #F6F5F1;
+  --color-ink: #14171F;
+  --color-border-subtle: #DBD8CE;
+  --color-accent-lime: #D7FF3E;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F6F5F1;
+  --foreground: #14171F;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background-color: #D7FF3E;
+  color: #14171F;
+}
+
+/* Custom Scrollbar for Sleek Editorial Feel */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EFECE4;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #DBD8CE;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #A8A59C;
+}
+
+/* Subtle Shimmer & Pulse Utilities */
+@keyframes pulse-subtle {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.96);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Paper texture or subtle grid background */
+.bg-grid-subtle {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(219, 216, 206, 0.35) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(219, 216, 206, 0.35) 1px, transparent 1px);
 }
