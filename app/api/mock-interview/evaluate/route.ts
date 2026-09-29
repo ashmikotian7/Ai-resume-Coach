@@ -18,75 +18,254 @@ const EvaluateInputSchema = z.object({
   resumeId: z.string().uuid().optional(),
 });
 
-interface EvaluationResult {
+export interface StarBreakdown {
+  situation: boolean;
+  task: boolean;
+  action: boolean;
+  result: boolean;
+}
+
+export interface QuestionEvaluation {
+  question: string;
+  candidate_answer: string;
+  score: number;
+  star_adherence: "strong" | "partial" | "weak";
+  star_breakdown: StarBreakdown;
+  strengths: string[];
+  improvement_tips: string[];
+  ideal_answer_summary: string;
+  model_answer: string;
+  filler_words_found: string[];
+  word_count: number;
+  pacing_feedback: string;
+}
+
+export interface EvaluationResult {
   overall_score: number;
   clarity_score: number;
   star_score: number;
   depth_score: number;
+  executive_presence_score: number;
+  hiring_decision: "Strong Hire" | "Hire" | "Leaning Hire" | "Needs Work";
+  hiring_recommendation_rationale: string;
   summary: string;
-  question_feedbacks: Array<{
-    question: string;
-    candidate_answer: string;
-    score: number;
-    star_adherence: "strong" | "partial" | "weak";
-    strengths: string[];
-    improvement_tips: string[];
-    ideal_answer_summary: string;
-  }>;
+  filler_words_summary: {
+    total_count: number;
+    frequent_words: string[];
+    impact_assessment: string;
+  };
+  question_feedbacks: QuestionEvaluation[];
+}
+
+const COMMON_FILLER_WORDS = [
+  "um",
+  "uh",
+  "like",
+  "you know",
+  "basically",
+  "actually",
+  "sort of",
+  "kind of",
+  "literally",
+  "honestly",
+  "right",
+  "i mean",
+];
+
+function analyzeFillers(text: string): string[] {
+  const lower = text.toLowerCase();
+  const detected: string[] = [];
+  for (const filler of COMMON_FILLER_WORDS) {
+    const regex = new RegExp(`\\b${filler}\\b`, "gi");
+    const matches = lower.match(regex);
+    if (matches && matches.length > 0) {
+      for (let i = 0; i < matches.length; i++) {
+        detected.push(filler);
+      }
+    }
+  }
+  return detected;
+}
+
+function analyzeStarComponents(text: string): StarBreakdown {
+  const t = text.toLowerCase();
+  const hasSituation =
+    t.includes("when") ||
+    t.includes("at ") ||
+    t.includes("during") ||
+    t.includes("project") ||
+    t.includes("company") ||
+    t.includes("scenario") ||
+    t.includes("faced") ||
+    t.includes("client");
+
+  const hasTask =
+    t.includes("goal") ||
+    t.includes("task") ||
+    t.includes("needed to") ||
+    t.includes("required") ||
+    t.includes("responsible") ||
+    t.includes("objective") ||
+    t.includes("target") ||
+    t.includes("challenge");
+
+  const hasAction =
+    t.includes("built") ||
+    t.includes("led") ||
+    t.includes("designed") ||
+    t.includes("implemented") ||
+    t.includes("architected") ||
+    t.includes("created") ||
+    t.includes("decided") ||
+    t.includes("spearheaded") ||
+    t.includes("developed") ||
+    t.includes("optimized");
+
+  const hasResult =
+    t.includes("result") ||
+    t.includes("increased") ||
+    t.includes("reduced") ||
+    t.includes("decreased") ||
+    t.includes("improved") ||
+    t.includes("achieved") ||
+    /\d+%/.test(t) ||
+    /\$\d+/.test(t) ||
+    t.includes("roi") ||
+    t.includes("latency") ||
+    t.includes("conversion");
+
+  return {
+    situation: hasSituation,
+    task: hasTask,
+    action: hasAction,
+    result: hasResult,
+  };
 }
 
 function generateFallbackEvaluation(
-  responses: Array<{ question: string; answer: string }>,
+  responses: Array<{ question: string; answer: string; ideal_answer?: string; context?: string }>,
   role?: string
 ): EvaluationResult {
-  const avgLength =
-    responses.reduce((acc, r) => acc + r.answer.trim().split(/\s+/).length, 0) /
-    Math.max(responses.length, 1);
+  let totalFillers = 0;
+  const fillerWordCounts: Record<string, number> = {};
 
-  const starDetected = responses.filter((r) => {
-    const text = r.answer.toLowerCase();
-    return (
-      (text.includes("when") || text.includes("situation") || text.includes("project")) &&
-      (text.includes("led") || text.includes("built") || text.includes("decided") || text.includes("implemented")) &&
-      (text.includes("result") || text.includes("increased") || text.includes("reduced") || text.includes("%"))
-    );
-  }).length;
+  const questionFeedbacks: QuestionEvaluation[] = responses.map((r) => {
+    const words = r.answer.trim().split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+    const fillers = analyzeFillers(r.answer);
+    totalFillers += fillers.length;
+    for (const f of fillers) {
+      fillerWordCounts[f] = (fillerWordCounts[f] || 0) + 1;
+    }
 
-  const starPercentage = Math.round((starDetected / Math.max(responses.length, 1)) * 100);
-  const baseScore = Math.min(
-    95,
-    Math.max(65, Math.round(68 + Math.min(avgLength, 120) * 0.15 + (starPercentage > 50 ? 10 : 0)))
+    const star = analyzeStarComponents(r.answer);
+    const starCount = [star.situation, star.task, star.action, star.result].filter(Boolean).length;
+    const starAdherence: "strong" | "partial" | "weak" =
+      starCount >= 3 && star.result ? "strong" : starCount >= 2 ? "partial" : "weak";
+
+    let score = 65;
+    if (wordCount >= 40) score += 10;
+    if (star.action) score += 8;
+    if (star.result) score += 10;
+    if (fillers.length === 0) score += 5;
+    else if (fillers.length > 3) score -= 5;
+    score = Math.min(96, Math.max(55, score));
+
+    let pacingFeedback = "Optimal response length";
+    if (wordCount < 30) {
+      pacingFeedback = "Too concise — expand with specific technical context and trade-offs.";
+    } else if (wordCount > 180) {
+      pacingFeedback = "Somewhat lengthy — condense narrative to keep interviewer fully engaged.";
+    } else {
+      pacingFeedback = "Strong conversational pacing (60-90 second target window).";
+    }
+
+    const strengths: string[] = [];
+    if (star.action) strengths.push("Clearly defined your specific ownership and hands-on actions");
+    if (star.result) strengths.push("Included quantifiable outcome or concrete impact");
+    if (wordCount >= 40) strengths.push("Sufficient technical context without excessive jargon");
+    if (strengths.length === 0) strengths.push("Directly tackled the interviewer's prompt");
+
+    const improvementTips: string[] = [];
+    if (!star.result) improvementTips.push("Anchor the finish with measurable metrics (% improvement, latency, dollar ROI)");
+    if (!star.situation) improvementTips.push("Spend 1 sentence upfront grounding the business stakes and baseline situation");
+    if (fillers.length > 1) improvementTips.push(`Minimize filler words (${Array.from(new Set(fillers)).join(", ")}) for executive gravitas`);
+    if (wordCount < 35) improvementTips.push("Provide the architectural reasoning or alternative paths considered");
+    if (improvementTips.length === 0) improvementTips.push("Briefly mention the post-launch learnings or secondary organizational benefit");
+
+    const modelAnswer = `Situation: When our team faced a bottleneck in this area, the core challenge was balancing speed with scalability.
+Task: I took ownership of redefining the architecture and establishing clear milestone alignment.
+Action: I designed and spearheaded the rollout, evaluating alternative trade-offs and selecting the highest-leverage path forward.
+Result: As a result, we drove measurable efficiency gains, reduced operational friction by 25%, and established a reusable standard for the broader organization.`;
+
+    return {
+      question: r.question,
+      candidate_answer: r.answer,
+      score,
+      star_adherence: starAdherence,
+      star_breakdown: star,
+      strengths,
+      improvement_tips: improvementTips,
+      ideal_answer_summary:
+        r.ideal_answer ||
+        "Structure with 1 sentence framing the scope, explain distinct trade-off rationale, and conclude with verified metric impact.",
+      model_answer: modelAnswer,
+      filler_words_found: Array.from(new Set(fillers)),
+      word_count: wordCount,
+      pacing_feedback: pacingFeedback,
+    };
+  });
+
+  const avgScore = Math.round(
+    questionFeedbacks.reduce((acc, q) => acc + q.score, 0) / Math.max(questionFeedbacks.length, 1)
   );
 
+  const starCountTotal = questionFeedbacks.reduce(
+    (acc, q) =>
+      acc + [q.star_breakdown.situation, q.star_breakdown.task, q.star_breakdown.action, q.star_breakdown.result].filter(Boolean).length,
+    0
+  );
+  const starPercentage = Math.round((starCountTotal / (questionFeedbacks.length * 4)) * 100);
+
+  const clarityScore = Math.min(95, Math.max(60, Math.round(avgScore + (totalFillers === 0 ? 5 : -totalFillers * 2))));
+  const depthScore = Math.min(94, Math.max(58, Math.round(avgScore - 2)));
+  const executivePresence = Math.min(95, Math.max(62, Math.round((clarityScore + avgScore) / 2)));
+
+  let hiringDecision: "Strong Hire" | "Hire" | "Leaning Hire" | "Needs Work" = "Hire";
+  if (avgScore >= 88) hiringDecision = "Strong Hire";
+  else if (avgScore >= 78) hiringDecision = "Hire";
+  else if (avgScore >= 68) hiringDecision = "Leaning Hire";
+  else hiringDecision = "Needs Work";
+
+  const topFillers = Object.entries(fillerWordCounts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([w]) => w)
+    .slice(0, 3);
+
   return {
-    overall_score: baseScore,
-    clarity_score: Math.min(94, baseScore + 4),
-    star_score: Math.max(60, starPercentage || 72),
-    depth_score: Math.min(92, Math.max(64, baseScore - 3)),
-    summary: `Demonstrated solid domain foundation${role ? ` for ${role}` : ""}. Responses showed direct experience, with ${starDetected} of ${responses.length} answers effectively utilizing the STAR framework (Situation, Task, Action, Result). Focus on front-loading quantifiable business metrics in remaining answers.`,
-    question_feedbacks: responses.map((r, idx) => {
-      const words = r.answer.trim().split(/\s+/).length;
-      const isDetailed = words > 35;
-      const hasMetrics = /\d+[%kKmM]?/.test(r.answer);
-      return {
-        question: r.question,
-        candidate_answer: r.answer,
-        score: isDetailed && hasMetrics ? 88 : isDetailed ? 78 : 68,
-        star_adherence: hasMetrics && isDetailed ? "strong" : isDetailed ? "partial" : "weak",
-        strengths: [
-          "Direct address of the interviewer's core question",
-          isDetailed ? "Specific operational context provided" : "Concise conversational delivery",
-        ],
-        improvement_tips: [
-          hasMetrics
-            ? "Expand on cross-functional alignment and lessons learned"
-            : "Include explicit numerical metrics (% improvement, latency drop, revenue impacted)",
-          "Explicitly conclude with the lasting organizational impact",
-        ],
-        ideal_answer_summary:
-          "Open with 1 sentence framing the scope, explain your distinct decision-making rationale, and end with the verified metric outcome.",
-      };
-    }),
+    overall_score: avgScore,
+    clarity_score: clarityScore,
+    star_score: Math.max(50, starPercentage),
+    depth_score: depthScore,
+    executive_presence_score: executivePresence,
+    hiring_decision: hiringDecision,
+    hiring_recommendation_rationale: `Candidate demonstrated solid competence for ${
+      role || "the target role"
+    }. STAR adherence scored ${starPercentage}%, with clear strengths in action ownership. Recommend focusing on numerical metric baselines and executive delivery conciseness.`,
+    summary: `Solid interview demonstration for ${
+      role || "target position"
+    }. Structured responses communicated technical capability, with ${
+      questionFeedbacks.filter((q) => q.star_adherence === "strong").length
+    } of ${questionFeedbacks.length} answers executing the complete STAR structure.`,
+    filler_words_summary: {
+      total_count: totalFillers,
+      frequent_words: topFillers,
+      impact_assessment:
+        totalFillers <= 2
+          ? "Minimal filler word friction. Poised and crisp speech."
+          : `Detected ${totalFillers} filler words (${topFillers.join(", ")}). Conscious pauses will enhance executive authority.`,
+    },
+    question_feedbacks: questionFeedbacks,
   };
 }
 
@@ -108,39 +287,57 @@ export async function POST(req: NextRequest) {
     if (isGeminiConfigured()) {
       try {
         const ai = getGeminiClient();
-        const prompt = `You are a Principal Hiring Manager and Executive Interview Coach.
-Evaluate this candidate's interview performance based on their responses to resume-tailored questions.
+        const prompt = `You are a Principal Hiring Committee Lead and Executive Coach at a tier-1 company.
+Evaluate this candidate's interview responses with high technical rigor, rubric precision, and actionable guidance.
 
-ROLE: ${role || "General Technical/Professional Role"}
+ROLE: ${role || "Senior Professional / Engineer"}
 DIFFICULTY: ${difficulty}
 
-INTERVIEW TRANSCRIPT:
+INTERVIEW RESPONSES:
 ${responses
   .map(
     (r, i) => `
 QUESTION ${i + 1}: ${r.question}
-IDEAL CONTEXT: ${r.ideal_answer || "Demonstrate structured STAR impact"}
-CANDIDATE ANSWER: ${r.answer}
+CONTEXT & EXPECTATION: ${r.ideal_answer || "Structured STAR delivery with metric outcome"}
+CANDIDATE ANSWER: "${r.answer}"
 `
   )
   .join("\n---")}
 
-Score the candidate rigorously (0-100 scale). Return strictly a JSON object:
+Perform an evaluation and return strictly JSON adhering to this schema:
 {
   "overall_score": number (0-100),
   "clarity_score": number (0-100),
-  "star_score": number (0-100, adherence to Situation, Task, Action, Result),
-  "depth_score": number (0-100, technical rigor and metric justification),
-  "summary": "2-3 sentences concise executive assessment",
+  "star_score": number (0-100),
+  "depth_score": number (0-100),
+  "executive_presence_score": number (0-100),
+  "hiring_decision": "Strong Hire" | "Hire" | "Leaning Hire" | "Needs Work",
+  "hiring_recommendation_rationale": "2-3 sentences explaining the hiring committee decision",
+  "summary": "2-3 sentences executive assessment summarizing candidate strengths and priority areas for improvement",
+  "filler_words_summary": {
+    "total_count": number,
+    "frequent_words": ["string"],
+    "impact_assessment": "string assessment of conversational filler impact"
+  },
   "question_feedbacks": [
     {
       "question": "string",
       "candidate_answer": "string",
       "score": number (0-100),
       "star_adherence": "strong" | "partial" | "weak",
+      "star_breakdown": {
+        "situation": boolean,
+        "task": boolean,
+        "action": boolean,
+        "result": boolean
+      },
       "strengths": ["string", "string"],
       "improvement_tips": ["string", "string"],
-      "ideal_answer_summary": "string"
+      "ideal_answer_summary": "string",
+      "model_answer": "A polished, word-for-word executive STAR response showing how the candidate should have answered using their same story and facts",
+      "filler_words_found": ["string"],
+      "word_count": number,
+      "pacing_feedback": "string"
     }
   ]
 }
@@ -156,7 +353,11 @@ Score the candidate rigorously (0-100 scale). Return strictly a JSON object:
 
         const textResponse = response.text || "{}";
         const cleanedJson = textResponse.replace(/^\s*```json/i, "").replace(/```\s*$/i, "").trim();
-        evaluation = JSON.parse(cleanedJson);
+        const parsed = JSON.parse(cleanedJson);
+
+        if (parsed.overall_score && Array.isArray(parsed.question_feedbacks)) {
+          evaluation = parsed;
+        }
       } catch (aiErr) {
         console.warn("Gemini evaluation error, using fallback heuristic:", aiErr);
       }
@@ -166,7 +367,7 @@ Score the candidate rigorously (0-100 scale). Return strictly a JSON object:
       evaluation = generateFallbackEvaluation(responses, role);
     }
 
-    // Persist to Supabase if possible
+    // Persist to Supabase if table exists
     try {
       await supabaseAdmin.from("mock_interviews").insert({
         resume_id: resumeId || null,
